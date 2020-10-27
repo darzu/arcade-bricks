@@ -4,35 +4,6 @@ namespace SpriteKind {
     export const BounceChecker = SpriteKind.create()
     export const VisualFloof = SpriteKind.create()
 }
-/**
- * brick breaking game TODO list
- * 
- * [x] aiming
- * 
- * [x] firing balls
- * 
- * [x] brick spawning
- * 
- * [x] BUG: ghost bricks
- * 
- * [x] bricks breaking
- * 
- * [x] bricks w/ numbers
- * 
- * [ ] salvo count
- * 
- * [ ] brick placement
- * 
- * [ ] bricks moving
- * 
- * [ ] integrate art
- * 
- * [ ] progression mechanics
- * 
- * bricks: 8x8, balls: 2x2
- * 
- * tallest brick: 24
- */
 // 1. place brick randomly
 // 
 // 2. delete if overlapping
@@ -42,15 +13,11 @@ sprites.onDestroyed(SpriteKind.Brick, function (sprite) {
     sprites.readDataSprite(sprite, "txt").destroy()
 })
 function fireSalvo () {
-    if (!(isFiring)) {
-        if (numSalvos == 0) {
-            info.setScore(round)
-            game.over(false, effects.splatter)
-        }
+    if (!(isFiring) && numSalvos > 0) {
         numSalvos += -1
         updateBallInfo()
+        isFiring = true
         timer.background(function () {
-            isFiring = true
             for (let index = 0; index < ballsPerSalvo; index++) {
                 ball = sprites.createProjectileFromSprite(img`
                     1 1 
@@ -108,6 +75,9 @@ function createBricks () {
         toggleWallsForBrick(value2, true)
     }
 }
+info.onCountdownEnd(function () {
+	
+})
 sprites.onOverlap(SpriteKind.BounceChecker, SpriteKind.Brick, function (sprite, otherSprite) {
     sprite.setFlag(SpriteFlag.Invisible, false)
     animation.runImageAnimation(
@@ -183,8 +153,8 @@ function updateBallInfo () {
         countBalls.left = 114
         countBalls.top = hdrBalls.bottom + 2
     }
-    countBalls.setText("" + ballsPerSalvo)
-    countSalvo.setText("" + numSalvos)
+    countBalls.setText("" + numSalvos * ballsPerSalvo)
+    countSalvo.setText("" + numSalvos + "/5")
 }
 function announceRound () {
     story.queueStoryPart(function () {
@@ -218,7 +188,7 @@ function nextRound () {
     announceRound()
     brickMaxNum += 1
     brickMinHealth += 1
-    brickMaxHealth = Math.round(brickMaxHealth * 1.3)
+    brickMaxHealth = Math.round(brickMaxHealth * 1.2)
     ballsPerSalvo += 1
     numSalvos = 5
     updateBallInfo()
@@ -246,6 +216,35 @@ scene.onOverlapTile(SpriteKind.Projectile, myTiles.tile4, function (sprite, loca
 sprites.onOverlap(SpriteKind.Projectile, SpriteKind.Brick, function (sprite, otherSprite) {
 	
 })
+/**
+ * brick breaking game TODO list
+ * 
+ * [x] aiming
+ * 
+ * [x] firing balls
+ * 
+ * [x] brick spawning
+ * 
+ * [x] BUG: ghost bricks
+ * 
+ * [x] bricks breaking
+ * 
+ * [x] bricks w/ numbers
+ * 
+ * [ ] salvo count
+ * 
+ * [ ] brick placement
+ * 
+ * [ ] bricks moving
+ * 
+ * [ ] integrate art
+ * 
+ * [ ] progression mechanics
+ * 
+ * bricks: 8x8, balls: 2x2
+ * 
+ * tallest brick: 24
+ */
 let textSprite: TextSprite = null
 let brickTxt: Sprite = null
 let roundTxt: TextSprite = null
@@ -460,7 +459,13 @@ game.onUpdate(function () {
     }
 })
 game.onUpdateInterval(500, function () {
-    if (0 == sprites.allOfKind(SpriteKind.Brick).length && 0 == sprites.allOfKind(SpriteKind.Projectile).length) {
-        nextRound()
+    if (0 == sprites.allOfKind(SpriteKind.Projectile).length) {
+        if (0 == sprites.allOfKind(SpriteKind.Brick).length) {
+            nextRound()
+        } else if (numSalvos == 0) {
+            info.setScore(round)
+            pause(500)
+            game.over(false, effects.splatter)
+        }
     }
 })
