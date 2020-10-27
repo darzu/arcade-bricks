@@ -1,6 +1,7 @@
 namespace SpriteKind {
     export const Brick = SpriteKind.create()
     export const Checker = SpriteKind.create()
+    export const BounceChecker = SpriteKind.create()
 }
 /**
  * brick breaking game TODO list
@@ -11,11 +12,13 @@ namespace SpriteKind {
  * 
  * [x] brick spawning
  * 
- * [ ] bricks breaking
+ *     [x] BUG: ghost bricks
  * 
- * [ ] brick placement
+ * [x] bricks breaking
  * 
  * [ ] bricks w/ numbers
+ * 
+ * [ ] brick placement
  * 
  * [ ] bricks moving
  * 
@@ -34,9 +37,25 @@ namespace SpriteKind {
  * 
  * 3. sliding window to flip wall on
  */
-sprites.onOverlap(SpriteKind.Brick, SpriteKind.Brick, function (sprite, otherSprite) {
-    sprite.destroy()
-})
+function toggleWallsForBrick (brick: Sprite, wallOn: boolean) {
+    collisionChecker = sprites.create(img`
+        8 8 8 8 8 8 8 8 
+        8 8 8 8 8 8 8 8 
+        8 8 8 8 8 8 8 8 
+        8 8 8 8 8 8 8 8 
+        8 8 8 8 8 8 8 8 
+        8 8 8 8 8 8 8 8 
+        8 8 8 8 8 8 8 8 
+        8 8 8 8 8 8 8 8 
+        `, SpriteKind.Checker)
+    for (let loc of tiles.getTilesByType(myTiles.transparency8)) {
+        tiles.placeOnTile(collisionChecker, loc)
+        if (brick.overlapsWith(collisionChecker)) {
+            tiles.setWallAt(loc, wallOn)
+        }
+    }
+    collisionChecker.destroy()
+}
 controller.A.onEvent(ControllerButtonEvent.Pressed, function () {
     ball = sprites.createProjectileFromSprite(img`
         1 1 
@@ -53,7 +72,24 @@ function updateBricks () {
         brick.left = tiles.locationXY(tiles.locationOfSprite(brick), tiles.XY.left)
         brick.right = Math.constrain(brick.right, 0, 128)
         brick.top = tiles.locationXY(tiles.locationOfSprite(brick), tiles.XY.top)
+        for (let value of sprites.allOfKind(SpriteKind.Brick)) {
+            if (brick.overlapsWith(value)) {
+                brick.destroy()
+            }
+        }
     }
+    bricks = sprites.allOfKind(SpriteKind.Brick)
+    for (let value of bricks) {
+        toggleWallsForBrick(value, true)
+    }
+}
+sprites.onOverlap(SpriteKind.BounceChecker, SpriteKind.Brick, function (sprite, otherSprite) {
+    toggleWallsForBrick(otherSprite, false)
+    otherSprite.destroy()
+    sprite.setFlag(SpriteFlag.Ghost, true)
+})
+scene.onHitWall(SpriteKind.Projectile, function (sprite, location) {
+    sprite.startEffect(effects.trail, 100)
     collisionChecker = sprites.create(img`
         8 8 8 8 8 8 8 8 
         8 8 8 8 8 8 8 8 
@@ -63,20 +99,51 @@ function updateBricks () {
         8 8 8 8 8 8 8 8 
         8 8 8 8 8 8 8 8 
         8 8 8 8 8 8 8 8 
-        `, SpriteKind.Checker)
-    bricks = sprites.allOfKind(SpriteKind.Brick)
-    for (let loc of tiles.getTilesByType(myTiles.transparency8)) {
-        tiles.placeOnTile(collisionChecker, loc)
-        for (let value of bricks) {
-            if (value.overlapsWith(collisionChecker)) {
-                tiles.setWallAt(loc, true)
-            }
-        }
-    }
-    collisionChecker.destroy()
-}
-scene.onHitWall(SpriteKind.Projectile, function (sprite, location) {
-    sprite.startEffect(effects.trail, 100)
+        `, SpriteKind.BounceChecker)
+    animation.runImageAnimation(
+    collisionChecker,
+    [img`
+        . . . . . . . . 
+        . . . . . . . . 
+        . . . . . . . . 
+        . . . . . . . . 
+        . . . 8 . . . . 
+        . . . . . . . . 
+        . . . . . . . . 
+        . . . . . . . . 
+        `,img`
+        . . . . . . . . 
+        . . . . . . . . 
+        . . . 8 8 . . . 
+        . . 8 . . 8 . . 
+        . . 8 . . 8 . . 
+        . . . 8 8 . . . 
+        . . . . . . . . 
+        . . . . . . . . 
+        `,img`
+        . . . . . . . . 
+        . . . 8 8 . . . 
+        . . 8 . . 8 . . 
+        . 8 . . . . 8 . 
+        . 8 . . . . 8 . 
+        . . 8 . . 8 . . 
+        . . . 8 8 . . . 
+        . . . . . . . . 
+        `,img`
+        . . . 8 8 . . . 
+        . . 8 . . 8 . . 
+        . 8 . . . . 8 . 
+        8 . . . . . . 8 
+        8 . . . . . . 8 
+        . 8 . . . . 8 . 
+        . . 8 . . 8 . . 
+        . . . 8 8 . . . 
+        `],
+    50,
+    false
+    )
+    collisionChecker.lifespan = 250
+    tiles.placeOnTile(collisionChecker, location)
 })
 scene.onOverlapTile(SpriteKind.Projectile, myTiles.tile4, function (sprite, location) {
     sprite.destroy()
@@ -85,10 +152,10 @@ sprites.onOverlap(SpriteKind.Projectile, SpriteKind.Brick, function (sprite, oth
 	
 })
 let bricks: Sprite[] = []
-let collisionChecker: Sprite = null
 let brick: Sprite = null
 let vis: Image = null
 let ball: Sprite = null
+let collisionChecker: Sprite = null
 let brickVisuals: Image[] = []
 let ballSpeed = 0
 let cursor: Sprite = null
