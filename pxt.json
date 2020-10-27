@@ -1,5 +1,5 @@
 {
-    "name": "stream #136 - Fruit Flies when you are having fun!",
+    "name": "stream #136 - Fruit Flies when you are having fun!d",
     "description": "",
     "dependencies": {
         "device": "*",
@@ -9,7 +9,8 @@
         "animation": "*",
         "arcade-sprite-data": "github:microsoft/arcade-sprite-data#v0.1.0",
         "arcade-text": "github:microsoft/arcade-text#v1.3.0",
-        "Timers": "github:microsoft/arcade-timers#v1.1.0"
+        "Timers": "github:microsoft/arcade-timers#v1.1.0",
+        "story": "github:riknoll/arcade-story#v1.1.3"
     },
     "files": [
         "main.blocks",
