@@ -37,6 +37,9 @@ namespace SpriteKind {
  * 
  * 3. sliding window to flip wall on
  */
+sprites.onDestroyed(SpriteKind.Brick, function (sprite) {
+    sprites.readDataSprite(sprite, "txt").destroy()
+})
 function toggleWallsForBrick (brick: Sprite, wallOn: boolean) {
     collisionChecker = sprites.create(img`
         8 8 8 8 8 8 8 8 
@@ -72,6 +75,8 @@ function updateBricks () {
         brick.left = tiles.locationXY(tiles.locationOfSprite(brick), tiles.XY.left)
         brick.right = Math.constrain(brick.right, 0, 128)
         brick.top = tiles.locationXY(tiles.locationOfSprite(brick), tiles.XY.top)
+        sprites.setDataNumber(brick, "hp", 5)
+        setBrickNum(brick)
         for (let value of sprites.allOfKind(SpriteKind.Brick)) {
             if (brick.overlapsWith(value)) {
                 brick.destroy()
@@ -84,10 +89,26 @@ function updateBricks () {
     }
 }
 sprites.onOverlap(SpriteKind.BounceChecker, SpriteKind.Brick, function (sprite, otherSprite) {
-    toggleWallsForBrick(otherSprite, false)
-    otherSprite.destroy()
     sprite.setFlag(SpriteFlag.Ghost, true)
+    sprites.changeDataNumberBy(otherSprite, "hp", -1)
+    if (sprites.readDataNumber(otherSprite, "hp") == 0) {
+        toggleWallsForBrick(otherSprite, false)
+        otherSprite.destroy()
+    } else {
+        setBrickNum(otherSprite)
+    }
 })
+function setBrickNum (brick: Sprite) {
+    brickTxt = sprites.readDataSprite(brick, "txt")
+    if (brickTxt) {
+        brickTxt.destroy()
+    }
+    textSprite = textsprite.create("" + sprites.readDataNumber(brick, "hp"), 0, 1)
+    textSprite.setOutline(1, 15)
+    textSprite.x = brick.x
+    textSprite.y = brick.y
+    sprites.setDataSprite(brick, "txt", textSprite)
+}
 scene.onHitWall(SpriteKind.Projectile, function (sprite, location) {
     sprite.startEffect(effects.trail, 100)
     collisionChecker = sprites.create(img`
@@ -151,6 +172,8 @@ scene.onOverlapTile(SpriteKind.Projectile, myTiles.tile4, function (sprite, loca
 sprites.onOverlap(SpriteKind.Projectile, SpriteKind.Brick, function (sprite, otherSprite) {
 	
 })
+let textSprite: TextSprite = null
+let brickTxt: Sprite = null
 let bricks: Sprite[] = []
 let brick: Sprite = null
 let vis: Image = null
