@@ -86,15 +86,15 @@ function toggleWallsForBrick (brick: Sprite, wallOn: boolean) {
 controller.A.onEvent(ControllerButtonEvent.Pressed, function () {
     fireSalvo()
 })
-function updateBricks () {
-    for (let index = 0; index <= 10; index++) {
+function createBricks () {
+    for (let index = 0; index <= brickMaxNum; index++) {
         vis = brickVisuals[randint(0, brickVisuals.length - 1)]
         brick = sprites.create(vis, SpriteKind.Brick)
         tiles.placeOnRandomTile(brick, myTiles.transparency8)
         brick.left = tiles.locationXY(tiles.locationOfSprite(brick), tiles.XY.left)
         brick.right = Math.constrain(brick.right, 0, 112)
         brick.top = tiles.locationXY(tiles.locationOfSprite(brick), tiles.XY.top)
-        sprites.setDataNumber(brick, "hp", 5)
+        sprites.setDataNumber(brick, "hp", randint(brickMinHealth, brickMaxHealth))
         setBrickNum(brick)
         for (let value of sprites.allOfKind(SpriteKind.Brick)) {
             if (brick.overlapsWith(value)) {
@@ -114,7 +114,7 @@ sprites.onOverlap(SpriteKind.BounceChecker, SpriteKind.Brick, function (sprite, 
         toggleWallsForBrick(otherSprite, false)
         otherSprite.destroy()
         numSalvos += 1
-        info.changeScoreBy(1)
+        info.changeScoreBy(brickMaxHealth)
     } else {
         setBrickNum(otherSprite)
     }
@@ -153,6 +153,13 @@ function setBrickNum (brick: Sprite) {
     textSprite.x = brick.x
     textSprite.y = brick.y
     sprites.setDataSprite(brick, "txt", textSprite)
+}
+function nextRound () {
+    brickMaxNum += 1
+    brickMinHealth += 1
+    brickMaxHealth = Math.round(brickMaxHealth * 1.2)
+    ballsPerSalvo += 1
+    createBricks()
 }
 scene.onHitWall(SpriteKind.Projectile, function (sprite, location) {
     sprite.startEffect(effects.trail, 100)
@@ -229,6 +236,9 @@ let vis: Image = null
 let collisionChecker: Sprite = null
 let ball: Sprite = null
 let isFiring = false
+let brickMaxHealth = 0
+let brickMinHealth = 0
+let brickMaxNum = 0
 let ballsPerSalvo = 0
 let numSalvos = 0
 let brickVisuals: Image[] = []
@@ -410,7 +420,10 @@ img`
 ]
 numSalvos = 5
 ballsPerSalvo = 2
-updateBricks()
+brickMaxNum = 10
+brickMinHealth = 4
+brickMaxHealth = 6
+createBricks()
 updateBallInfo()
 game.onUpdate(function () {
     spriteutils.placeAngleFrom(
@@ -423,11 +436,11 @@ game.onUpdate(function () {
 game.onUpdate(function () {
     if (!(isFiring)) {
         cursorAngle += controller.dx(100)
-        cursorAngle = Math.constrain(cursorAngle, 180, 360)
+        cursorAngle = Math.constrain(cursorAngle, 190, 350)
     }
 })
 game.onUpdateInterval(500, function () {
     if (0 == sprites.allOfKind(SpriteKind.Brick).length) {
-        updateBricks()
+        nextRound()
     }
 })
