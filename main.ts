@@ -16,7 +16,9 @@ namespace SpriteKind {
  * 
  * [x] bricks breaking
  * 
- * [ ] bricks w/ numbers
+ * [x] bricks w/ numbers
+ * 
+ * [ ] salvo count
  * 
  * [ ] brick placement
  * 
@@ -40,6 +42,28 @@ namespace SpriteKind {
 sprites.onDestroyed(SpriteKind.Brick, function (sprite) {
     sprites.readDataSprite(sprite, "txt").destroy()
 })
+function fireSalvo () {
+    if (!(isFiring)) {
+        if (numSalvos == 0) {
+            game.over(false)
+        }
+        numSalvos += -1
+        updateBallInfo()
+        timer.background(function () {
+            isFiring = true
+            for (let index = 0; index < ballsPerSalvo; index++) {
+                ball = sprites.createProjectileFromSprite(img`
+                    1 1 
+                    1 1 
+                    `, cannon, (cursor.x - cannon.x) * ballSpeed, (cursor.y - cannon.y) * ballSpeed)
+                ball.setFlag(SpriteFlag.BounceOnWall, true)
+                ball.setFlag(SpriteFlag.DestroyOnWall, false)
+                pause(200)
+            }
+            isFiring = false
+        })
+    }
+}
 function toggleWallsForBrick (brick: Sprite, wallOn: boolean) {
     collisionChecker = sprites.create(img`
         8 8 8 8 8 8 8 8 
@@ -60,12 +84,7 @@ function toggleWallsForBrick (brick: Sprite, wallOn: boolean) {
     collisionChecker.destroy()
 }
 controller.A.onEvent(ControllerButtonEvent.Pressed, function () {
-    ball = sprites.createProjectileFromSprite(img`
-        1 1 
-        1 1 
-        `, cannon, (cursor.x - cannon.x) * ballSpeed, (cursor.y - cannon.y) * ballSpeed)
-    ball.setFlag(SpriteFlag.BounceOnWall, true)
-    ball.setFlag(SpriteFlag.DestroyOnWall, false)
+    fireSalvo()
 })
 function updateBricks () {
     for (let index = 0; index <= 10; index++) {
@@ -73,7 +92,7 @@ function updateBricks () {
         brick = sprites.create(vis, SpriteKind.Brick)
         tiles.placeOnRandomTile(brick, myTiles.transparency8)
         brick.left = tiles.locationXY(tiles.locationOfSprite(brick), tiles.XY.left)
-        brick.right = Math.constrain(brick.right, 0, 128)
+        brick.right = Math.constrain(brick.right, 0, 112)
         brick.top = tiles.locationXY(tiles.locationOfSprite(brick), tiles.XY.top)
         sprites.setDataNumber(brick, "hp", 5)
         setBrickNum(brick)
@@ -94,10 +113,36 @@ sprites.onOverlap(SpriteKind.BounceChecker, SpriteKind.Brick, function (sprite, 
     if (sprites.readDataNumber(otherSprite, "hp") == 0) {
         toggleWallsForBrick(otherSprite, false)
         otherSprite.destroy()
+        numSalvos += 1
+        info.changeScoreBy(1)
     } else {
         setBrickNum(otherSprite)
     }
 })
+function updateBallInfo () {
+    if (!(hdrSalvo)) {
+        hdrSalvo = textsprite.create("SALVOS", 0, 5)
+        hdrSalvo.top = 2
+        hdrSalvo.left = 114
+    }
+    if (!(countSalvo)) {
+        countSalvo = textsprite.create("#")
+        countSalvo.top = hdrSalvo.bottom + 2
+        countSalvo.left = 114
+    }
+    if (!(hdrBalls)) {
+        hdrBalls = textsprite.create("BALLS", 0, 5)
+        hdrBalls.left = 114
+        hdrBalls.top = countSalvo.bottom + 2
+    }
+    if (!(countBalls)) {
+        countBalls = textsprite.create("#")
+        countBalls.left = 114
+        countBalls.top = hdrBalls.bottom + 2
+    }
+    countBalls.setText("" + ballsPerSalvo)
+    countSalvo.setText("" + numSalvos)
+}
 function setBrickNum (brick: Sprite) {
     brickTxt = sprites.readDataSprite(brick, "txt")
     if (brickTxt) {
@@ -174,11 +219,18 @@ sprites.onOverlap(SpriteKind.Projectile, SpriteKind.Brick, function (sprite, oth
 })
 let textSprite: TextSprite = null
 let brickTxt: Sprite = null
+let countBalls: TextSprite = null
+let hdrBalls: TextSprite = null
+let countSalvo: TextSprite = null
+let hdrSalvo: TextSprite = null
 let bricks: Sprite[] = []
 let brick: Sprite = null
 let vis: Image = null
-let ball: Sprite = null
 let collisionChecker: Sprite = null
+let ball: Sprite = null
+let isFiring = false
+let ballsPerSalvo = 0
+let numSalvos = 0
 let brickVisuals: Image[] = []
 let ballSpeed = 0
 let cursor: Sprite = null
@@ -196,23 +248,23 @@ cursor = sprites.create(img`
     a a 
     `, SpriteKind.Player)
 let cursorAngle = 3.14159
-cannon.setPosition(80, 110)
-cursor.setPosition(80, 90)
-tiles.setSmallTilemap(tiles.createTilemap(hex`14000f00010101010000000000000000000000000101010101010101000000000000000000000000010101010101010100000000000000000000000001010101010101010000000000000000000000000101010101010101000000000000000000000000010101010101010100000000000000000000000001010101010101010000000000000000000000000101010101010101000000000000000000000000010101010101010100000000000000000000000001010101010101010000000000000000000000000101010101010101020202020202020202020202010101010101010102020202020202020202020201010101010101010202020202020202020202020101010101010101020202020202020202020202010101010101010101010101010101010101010101010101`, img`
-    2 2 2 2 . . . . . . . . . . . . 2 2 2 2 
-    2 2 2 2 . . . . . . . . . . . . 2 2 2 2 
-    2 2 2 2 . . . . . . . . . . . . 2 2 2 2 
-    2 2 2 2 . . . . . . . . . . . . 2 2 2 2 
-    2 2 2 2 . . . . . . . . . . . . 2 2 2 2 
-    2 2 2 2 . . . . . . . . . . . . 2 2 2 2 
-    2 2 2 2 . . . . . . . . . . . . 2 2 2 2 
-    2 2 2 2 . . . . . . . . . . . . 2 2 2 2 
-    2 2 2 2 . . . . . . . . . . . . 2 2 2 2 
-    2 2 2 2 . . . . . . . . . . . . 2 2 2 2 
-    2 2 2 2 . . . . . . . . . . . . 2 2 2 2 
-    2 2 2 2 . . . . . . . . . . . . 2 2 2 2 
-    2 2 2 2 . . . . . . . . . . . . 2 2 2 2 
-    2 2 2 2 . . . . . . . . . . . . 2 2 2 2 
+cannon.setPosition(64, 110)
+cursor.setPosition(64, 90)
+tiles.setSmallTilemap(tiles.createTilemap(hex`14000f00010100000000000000000000000001010101010101010000000000000000000000000101010101010101000000000000000000000000010101010101010100000000000000000000000001010101010101010000000000000000000000000101010101010101000000000000000000000000010101010101010100000000000000000000000001010101010101010000000000000000000000000101010101010101000000000000000000000000010101010101010100000000000000000000000001010101010101010202020202020202020202020101010101010101020202020202020202020202010101010101010102020202020202020202020201010101010101010202020202020202020202020101010101010101010101010101010101010101010101010101`, img`
+    2 2 . . . . . . . . . . . . 2 2 2 2 2 2 
+    2 2 . . . . . . . . . . . . 2 2 2 2 2 2 
+    2 2 . . . . . . . . . . . . 2 2 2 2 2 2 
+    2 2 . . . . . . . . . . . . 2 2 2 2 2 2 
+    2 2 . . . . . . . . . . . . 2 2 2 2 2 2 
+    2 2 . . . . . . . . . . . . 2 2 2 2 2 2 
+    2 2 . . . . . . . . . . . . 2 2 2 2 2 2 
+    2 2 . . . . . . . . . . . . 2 2 2 2 2 2 
+    2 2 . . . . . . . . . . . . 2 2 2 2 2 2 
+    2 2 . . . . . . . . . . . . 2 2 2 2 2 2 
+    2 2 . . . . . . . . . . . . 2 2 2 2 2 2 
+    2 2 . . . . . . . . . . . . 2 2 2 2 2 2 
+    2 2 . . . . . . . . . . . . 2 2 2 2 2 2 
+    2 2 . . . . . . . . . . . . 2 2 2 2 2 2 
     . . . . . . . . . . . . . . . . . . . . 
     `, [myTiles.transparency8,myTiles.tile4,myTiles.tile5], TileScale.Eight))
 tiles.coverAllTiles(myTiles.tile5, myTiles.tile6)
@@ -356,11 +408,10 @@ img`
     6 . . . c e e c e e c e e . . . 
     `
 ]
+numSalvos = 5
+ballsPerSalvo = 2
 updateBricks()
-game.onUpdate(function () {
-    cursorAngle += controller.dx(100)
-    cursorAngle = Math.constrain(cursorAngle, 180, 360)
-})
+updateBallInfo()
 game.onUpdate(function () {
     spriteutils.placeAngleFrom(
     cursor,
@@ -368,4 +419,15 @@ game.onUpdate(function () {
     20,
     cannon
     )
+})
+game.onUpdate(function () {
+    if (!(isFiring)) {
+        cursorAngle += controller.dx(100)
+        cursorAngle = Math.constrain(cursorAngle, 180, 360)
+    }
+})
+game.onUpdateInterval(500, function () {
+    if (0 == sprites.allOfKind(SpriteKind.Brick).length) {
+        updateBricks()
+    }
 })
