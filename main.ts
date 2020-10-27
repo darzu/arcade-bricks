@@ -4,6 +4,35 @@ namespace SpriteKind {
     export const BounceChecker = SpriteKind.create()
     export const VisualFloof = SpriteKind.create()
 }
+/**
+ * brick breaking game TODO list
+ * 
+ * [x] aiming
+ * 
+ * [x] firing balls
+ * 
+ * [x] brick spawning
+ * 
+ * [x] BUG: ghost bricks
+ * 
+ * [x] bricks breaking
+ * 
+ * [x] bricks w/ numbers
+ * 
+ * [ ] salvo count
+ * 
+ * [ ] brick placement
+ * 
+ * [ ] bricks moving
+ * 
+ * [ ] integrate art
+ * 
+ * [ ] progression mechanics
+ * 
+ * bricks: 8x8, balls: 2x2
+ * 
+ * tallest brick: 24
+ */
 // 1. place brick randomly
 // 
 // 2. delete if overlapping
@@ -133,9 +162,19 @@ sprites.onOverlap(SpriteKind.BounceChecker, SpriteKind.Brick, function (sprite, 
     }
 })
 function updateBallInfo () {
+    if (!(hdrRound)) {
+        hdrRound = textsprite.create("ROUND", 0, 5)
+        hdrRound.top = 2
+        hdrRound.left = 114
+    }
+    if (!(smallRoundTxt)) {
+        smallRoundTxt = textsprite.create("#")
+        smallRoundTxt.top = hdrRound.bottom + 2
+        smallRoundTxt.left = 114
+    }
     if (!(hdrSalvo)) {
         hdrSalvo = textsprite.create("SALVOS", 0, 5)
-        hdrSalvo.top = 2
+        hdrSalvo.top = smallRoundTxt.bottom + 2
         hdrSalvo.left = 114
     }
     if (!(countSalvo)) {
@@ -155,6 +194,7 @@ function updateBallInfo () {
     }
     countBalls.setText("" + numSalvos * ballsPerSalvo)
     countSalvo.setText("" + numSalvos + "/5")
+    smallRoundTxt.setText("" + round)
 }
 function announceRound () {
     story.queueStoryPart(function () {
@@ -216,35 +256,6 @@ scene.onOverlapTile(SpriteKind.Projectile, myTiles.tile4, function (sprite, loca
 sprites.onOverlap(SpriteKind.Projectile, SpriteKind.Brick, function (sprite, otherSprite) {
 	
 })
-/**
- * brick breaking game TODO list
- * 
- * [x] aiming
- * 
- * [x] firing balls
- * 
- * [x] brick spawning
- * 
- * [x] BUG: ghost bricks
- * 
- * [x] bricks breaking
- * 
- * [x] bricks w/ numbers
- * 
- * [ ] salvo count
- * 
- * [ ] brick placement
- * 
- * [ ] bricks moving
- * 
- * [ ] integrate art
- * 
- * [ ] progression mechanics
- * 
- * bricks: 8x8, balls: 2x2
- * 
- * tallest brick: 24
- */
 let textSprite: TextSprite = null
 let brickTxt: Sprite = null
 let roundTxt: TextSprite = null
@@ -252,6 +263,8 @@ let countBalls: TextSprite = null
 let hdrBalls: TextSprite = null
 let countSalvo: TextSprite = null
 let hdrSalvo: TextSprite = null
+let smallRoundTxt: TextSprite = null
+let hdrRound: TextSprite = null
 let bricks: Sprite[] = []
 let brick: Sprite = null
 let vis: Image = null
