@@ -4,35 +4,6 @@ namespace SpriteKind {
     export const BounceChecker = SpriteKind.create()
     export const VisualFloof = SpriteKind.create()
 }
-/**
- * brick breaking game TODO list
- * 
- * [x] aiming
- * 
- * [x] firing balls
- * 
- * [x] brick spawning
- * 
- * [x] BUG: ghost bricks
- * 
- * [x] bricks breaking
- * 
- * [x] bricks w/ numbers
- * 
- * [ ] salvo count
- * 
- * [ ] brick placement
- * 
- * [ ] bricks moving
- * 
- * [ ] integrate art
- * 
- * [ ] progression mechanics
- * 
- * bricks: 8x8, balls: 2x2
- * 
- * tallest brick: 24
- */
 // 1. place brick randomly
 // 
 // 2. delete if overlapping
@@ -44,7 +15,7 @@ sprites.onDestroyed(SpriteKind.Brick, function (sprite) {
 function fireSalvo () {
     if (!(isFiring) && numSalvos > 0) {
         numSalvos += -1
-        updateBallInfo()
+        updateHUD()
         isFiring = true
         timer.background(function () {
             for (let index = 0; index < ballsPerSalvo; index++) {
@@ -60,6 +31,9 @@ function fireSalvo () {
         })
     }
 }
+controller.up.onEvent(ControllerButtonEvent.Pressed, function () {
+	
+})
 function clearTracer () {
     scene.setBackgroundImage(img`
         ................................................................................................................................................................
@@ -187,8 +161,77 @@ function clearTracer () {
         tracer.destroy()
     }
 }
+function updateHUD () {
+    if (!(hdrRound)) {
+        hdrRound = textsprite.create("ROUND", 0, 5)
+        hdrRound.top = 2
+        hdrRound.left = 114
+    }
+    if (!(smallRoundTxt)) {
+        smallRoundTxt = textsprite.create("#")
+        smallRoundTxt.top = hdrRound.bottom + 2
+        smallRoundTxt.left = 114
+    }
+    if (!(hdrSalvo)) {
+        hdrSalvo = textsprite.create("SALVOS", 0, 5)
+        hdrSalvo.top = smallRoundTxt.bottom + 2
+        hdrSalvo.left = 114
+    }
+    if (!(countSalvo)) {
+        countSalvo = textsprite.create("#")
+        countSalvo.top = hdrSalvo.bottom + 2
+        countSalvo.left = 114
+    }
+    if (!(hdrBalls)) {
+        hdrBalls = textsprite.create("BALLS", 0, 5)
+        hdrBalls.left = 114
+        hdrBalls.top = countSalvo.bottom + 2
+    }
+    if (!(countBalls)) {
+        countBalls = textsprite.create("#")
+        countBalls.left = 114
+        countBalls.top = hdrBalls.bottom + 2
+    }
+    if (!(hdrTrace) && hasTracer) {
+        hdrTrace = textsprite.create("Press B", 0, 9)
+        hdrTrace.left = 114
+        hdrTrace.top = countBalls.bottom + 10
+        hdrTrace2 = textsprite.create("to", 0, 9)
+        hdrTrace2.left = 114
+        hdrTrace2.top = hdrTrace.bottom + 2
+        hdrTrace3 = textsprite.create("trace!", 0, 9)
+        hdrTrace3.left = 114
+        hdrTrace3.top = hdrTrace2.bottom + 2
+    }
+    if (hasBarriers && !(hdrBarrier)) {
+        hdrBarrier = textsprite.create("WALLS", 0, 5)
+        hdrBarrier.left = 114
+        hdrBarrier.top = countBalls.bottom + 2
+        countBarriers = textsprite.create("#")
+        countBarriers.left = 114
+        countBarriers.top = hdrBarrier.bottom + 2
+        hdrTrace.destroy()
+        hdrTrace2.destroy()
+        hdrTrace3.destroy()
+        hdrTrace = textsprite.create("Press", 0, 9)
+        hdrTrace.left = 114
+        hdrTrace.top = countBarriers.bottom + 10
+        hdrTrace2 = textsprite.create("DOWN for", 0, 9)
+        hdrTrace2.left = 114
+        hdrTrace2.top = hdrTrace.bottom + 2
+        hdrTrace3 = textsprite.create("a wall!", 0, 9)
+        hdrTrace3.left = 114
+        hdrTrace3.top = hdrTrace2.bottom + 2
+    }
+    countBalls.setText("" + numSalvos * ballsPerSalvo)
+    countSalvo.setText("" + numSalvos + "/5")
+    smallRoundTxt.setText("" + round)
+    if (hasBarriers) {
+        countBarriers.setText("" + numBarriers)
+    }
+}
 controller.B.onEvent(ControllerButtonEvent.Pressed, function () {
-    if (hasTracer) {
+    if (hasTracer && !(isBallsActive) && !(isBarrierActive)) {
         clearTracer()
         tracer = fireTo(cannon, ballSpeed, img`
             1 1 
@@ -217,12 +260,48 @@ function toggleWallsForBrick (brick: Sprite, wallOn: boolean) {
             tiles.setWallAt(loc, wallOn)
         }
     }
+    for (let loc of tiles.getTilesByType(myTiles.tile7)) {
+        tiles.placeOnTile(collisionChecker, loc)
+        if (brick.overlapsWith(collisionChecker)) {
+            tiles.setWallAt(loc, wallOn)
+            tiles.setTileAt(loc, myTiles.tile2)
+        }
+    }
     collisionChecker.destroy()
 }
 controller.A.onEvent(ControllerButtonEvent.Pressed, function () {
     clearTracer()
     fireSalvo()
 })
+/**
+ * brick breaking game TODO list
+ * 
+ * [x] aiming
+ * 
+ * [x] firing balls
+ * 
+ * [x] brick spawning
+ * 
+ * [x] BUG: ghost bricks
+ * 
+ * [x] bricks breaking
+ * 
+ * [x] bricks w/ numbers
+ * 
+ * [ ] salvo count
+ * 
+ * [ ] brick placement
+ * 
+ * [ ] bricks moving
+ * 
+ * [ ] integrate art
+ * 
+ * [ ] progression mechanics
+ * 
+ * bricks: 8x8, balls: 2x2
+ * 
+ * tallest brick: 24
+ */
 function createBricks () {
     for (let index2 = 0; index2 <= brickMaxNum; index2++) {
         vis = brickVisuals[randint(0, brickVisuals.length - 1)]
@@ -297,60 +376,42 @@ sprites.onOverlap(SpriteKind.BounceChecker, SpriteKind.Brick, function (sprite, 
     if (sprites.readDataNumber(otherSprite, "hp") == 0) {
         toggleWallsForBrick(otherSprite, false)
         otherSprite.destroy()
-        updateBallInfo()
+        updateHUD()
     } else {
         setBrickNum(otherSprite)
     }
 })
-function updateBallInfo () {
-    if (!(hdrRound)) {
-        hdrRound = textsprite.create("ROUND", 0, 5)
-        hdrRound.top = 2
-        hdrRound.left = 114
+function createBarrier () {
+    if (!(isBarrierActive) && !(isTracerActive) && 0 < numBarriers) {
+        numBarriers += -1
+        for (let index = 0; index <= 11; index++) {
+            loc = tiles.getTileLocation(index + 2, 14)
+            tiles.setTileAt(loc, myTiles.tile7)
+            tiles.setWallAt(loc, true)
+            barrier = sprites.create(img`
+                777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777
+                777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777
+                777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777
+                777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777
+                777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777
+                777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777
+                777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777
+                777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777
+                `, SpriteKind.Brick)
+            barrier.left = 16
+            barrier.bottom = 120
+            barrier.setFlag(SpriteFlag.Invisible, true)
+            sprites.setDataNumber(barrier, "hp", brickMaxHealth)
+            setBrickNum(barrier)
+        }
     }
-    if (!(smallRoundTxt)) {
-        smallRoundTxt = textsprite.create("#")
-        smallRoundTxt.top = hdrRound.bottom + 2
-        smallRoundTxt.left = 114
-    }
-    if (!(hdrSalvo)) {
-        hdrSalvo = textsprite.create("SALVOS", 0, 5)
-        hdrSalvo.top = smallRoundTxt.bottom + 2
-        hdrSalvo.left = 114
-    }
-    if (!(countSalvo)) {
-        countSalvo = textsprite.create("#")
-        countSalvo.top = hdrSalvo.bottom + 2
-        countSalvo.left = 114
-    }
-    if (!(hdrBalls)) {
-        hdrBalls = textsprite.create("BALLS", 0, 5)
-        hdrBalls.left = 114
-        hdrBalls.top = countSalvo.bottom + 2
-    }
-    if (!(countBalls)) {
-        countBalls = textsprite.create("#")
-        countBalls.left = 114
-        countBalls.top = hdrBalls.bottom + 2
-    }
-    if (!(hdrTrace) && hasTracer) {
-        hdrTrace = textsprite.create("Press B to trace", 0, 9)
-        hdrTrace.left = 114
-        hdrTrace.top = countBalls.bottom + 10
-        hdrTrace2 = textsprite.create("to", 0, 9)
-        hdrTrace2.left = 114
-        hdrTrace2.top = hdrTrace.bottom + 2
-        hdrTrace3 = textsprite.create("trace!", 0, 9)
-        hdrTrace3.left = 114
-        hdrTrace3.top = hdrTrace2.bottom + 2
-    }
-    countBalls.setText("" + numSalvos * ballsPerSalvo)
-    countSalvo.setText("" + numSalvos + "/5")
-    smallRoundTxt.setText("" + round)
 }
 function announceRound () {
     anounceText("ROUND" + round, 24)
 }
+controller.down.onEvent(ControllerButtonEvent.Pressed, function () {
+    createBarrier()
+})
 function setBrickNum (brick: Sprite) {
     brickTxt = sprites.readDataSprite(brick, "txt")
     if (brickTxt) {
@@ -371,13 +432,22 @@ function nextRound () {
         anounceText("NEW POWER!", 16)
         anounceText("Press \"B\" to trace!", 8)
     }
+    if (round == 20) {
+        hasBarriers = true
+        effects.confetti.startScreenEffect(2000)
+        anounceText("NEW POWER!", 16)
+        anounceText("Press DOWN for a wall!", 8)
+    }
     announceRound()
     brickMaxNum += 1
     brickMinHealth += 1
     brickMaxHealth = Math.round(brickMaxHealth * 1.2)
     ballsPerSalvo += 1
     numSalvos = 5
-    updateBallInfo()
+    if (hasBarriers) {
+        numBarriers += 1
+    }
+    updateHUD()
     createBricks()
 }
 function anounceText (message: string, fontSize: number) {
@@ -426,6 +496,19 @@ sprites.onOverlap(SpriteKind.Projectile, SpriteKind.Brick, function (sprite, oth
 let roundTxt: TextSprite = null
 let textSprite: TextSprite = null
 let brickTxt: Sprite = null
+let barrier: Sprite = null
+let loc: tiles.Location = null
+let isTracerActive = false
+let bricks: Sprite[] = []
+let brick: Sprite = null
+let vis: Image = null
+let collisionChecker: Sprite = null
+let tracerPrevY = 0
+let tracerPrevX = 0
+let isBarrierActive = false
+let isBallsActive = false
+let countBarriers: TextSprite = null
+let hdrBarrier: TextSprite = null
 let hdrTrace3: TextSprite = null
 let hdrTrace2: TextSprite = null
 let hdrTrace: TextSprite = null
@@ -435,17 +518,13 @@ let countSalvo: TextSprite = null
 let hdrSalvo: TextSprite = null
 let smallRoundTxt: TextSprite = null
 let hdrRound: TextSprite = null
-let bricks: Sprite[] = []
-let brick: Sprite = null
-let vis: Image = null
-let collisionChecker: Sprite = null
-let tracerPrevY = 0
-let tracerPrevX = 0
-let hasTracer = false
 let tracer: Sprite = null
 let ball: Sprite = null
 let isFiring = false
+let hasTracer = false
+let hasBarriers = false
 let round = 0
+let numBarriers = 0
 let brickMaxHealth = 0
 let brickMinHealth = 0
 let brickMaxNum = 0
@@ -620,9 +699,12 @@ ballsPerSalvo = 2
 brickMaxNum = 10
 brickMinHealth = 1
 brickMaxHealth = 3
+numBarriers = 0
 round = 1
+hasBarriers = false
+hasTracer = false
 createBricks()
-updateBallInfo()
+updateHUD()
 announceRound()
 game.onUpdate(function () {
     spriteutils.placeAngleFrom(
@@ -639,20 +721,25 @@ game.onUpdate(function () {
     )
 })
 game.onUpdate(function () {
+    if (isTracerActive) {
+        scene.backgroundImage().drawLine(tracerPrevX, tracerPrevY, tracer.x, tracer.y, 1)
+        tracerPrevX = tracer.x
+        tracerPrevY = tracer.y
+    }
+})
+game.onUpdate(function () {
     if (!(isFiring)) {
         cursorAngle += controller.dx(100)
         cursorAngle = Math.constrain(cursorAngle, 190, 350)
     }
 })
 game.onUpdate(function () {
-    if (tracer && !(spriteutils.isDestroyed(tracer))) {
-        scene.backgroundImage().drawLine(tracerPrevX, tracerPrevY, tracer.x, tracer.y, 1)
-        tracerPrevX = tracer.x
-        tracerPrevY = tracer.y
-    }
+    isBarrierActive = barrier && !(spriteutils.isDestroyed(barrier))
+    isBallsActive = 0 < sprites.allOfKind(SpriteKind.Projectile).length
+    isTracerActive = tracer && !(spriteutils.isDestroyed(tracer))
 })
 game.onUpdateInterval(500, function () {
-    if (0 == sprites.allOfKind(SpriteKind.Projectile).length) {
+    if (!(isBallsActive)) {
         if (0 == sprites.allOfKind(SpriteKind.Brick).length) {
             nextRound()
         } else if (numSalvos == 0) {
