@@ -735,8 +735,8 @@ game.onUpdate(function () {
 })
 game.onUpdate(function () {
     isBarrierActive = barrier && !(spriteutils.isDestroyed(barrier))
-    isBallsActive = 0 < sprites.allOfKind(SpriteKind.Projectile).length
     isTracerActive = tracer && !(spriteutils.isDestroyed(tracer))
+    isBallsActive = 0 < sprites.allOfKind(SpriteKind.Projectile).length && !(isTracerActive)
 })
 game.onUpdateInterval(500, function () {
     if (!(isBallsActive)) {
