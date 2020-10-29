@@ -703,9 +703,10 @@ numBarriers = 0
 round = 1
 hasBarriers = false
 hasTracer = false
+let isBricksActive = true
 createBricks()
-updateHUD()
 announceRound()
+updateHUD()
 game.onUpdate(function () {
     spriteutils.placeAngleFrom(
     cursor2,
@@ -737,15 +738,15 @@ game.onUpdate(function () {
     isBarrierActive = barrier && !(spriteutils.isDestroyed(barrier))
     isTracerActive = tracer && !(spriteutils.isDestroyed(tracer))
     isBallsActive = 0 < sprites.allOfKind(SpriteKind.Projectile).length && !(isTracerActive)
+    isBricksActive = 1 < sprites.allOfKind(SpriteKind.Brick).length || 1 == sprites.allOfKind(SpriteKind.Brick).length && !(isBarrierActive)
 })
 game.onUpdateInterval(500, function () {
-    if (!(isBallsActive)) {
-        if (0 == sprites.allOfKind(SpriteKind.Brick).length) {
-            nextRound()
-        } else if (numSalvos == 0) {
-            info.setScore(round)
-            pause(500)
-            game.over(false, effects.splatter)
-        }
+    if (!(isBricksActive) && !(isBallsActive)) {
+        nextRound()
+    }
+    if (!(isBallsActive) && numSalvos == 0) {
+        info.setScore(round)
+        pause(500)
+        game.over(false, effects.splatter)
     }
 })
